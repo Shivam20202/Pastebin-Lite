@@ -25,7 +25,8 @@ export default function PasteForm() {
     const data = await res.json();
     if (!res.ok) return alert(data.error || "Error");
 
-    setResult(data.url);
+    setResult(`${window.location.origin}/p/${data.id}`);
+
   };
 
   return (
