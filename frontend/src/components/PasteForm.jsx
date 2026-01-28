@@ -7,40 +7,61 @@ export default function PasteForm() {
   const [ttl, setTtl] = useState("");
   const [maxViews, setMaxViews] = useState("");
   const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const maxChars = 100000;
 
   const createPaste = async () => {
-    if (!content.trim()) return alert("Content is required");
+    if (!content.trim()) {
+      alert("Content is required");
+      return;
+    }
 
-    const res = await fetch(`${API_BASE}/api/pastes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content,
-        ttl_seconds: ttl ? Number(ttl) : undefined,
-        max_views: maxViews ? Number(maxViews) : undefined,
-      }),
-    });
+    setLoading(true);
 
-    const data = await res.json();
-    if (!res.ok) return alert(data.error || "Error");
+    try {
+      const res = await fetch(`${API_BASE}/api/pastes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          ttl_seconds: ttl ? Number(ttl) : undefined,
+          max_views: maxViews ? Number(maxViews) : undefined,
+        }),
+      });
 
-    setResult(`${window.location.origin}/p/${data.id}`);
+      const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create paste");
+      }
+
+      
+      const frontendUrl = `${window.location.origin}/p/${data.id}`;
+      setResult(frontendUrl);
+    } catch (err) {
+      alert(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Text Area */}
+      {/* Paste Content */}
       <div className="lg:col-span-2 bg-slate-800/80 border border-slate-700 rounded-xl p-4">
         <div className="flex justify-between mb-2 text-sm text-slate-400">
           <span>Paste Content</span>
-          <span>{content.length} / {maxChars}</span>
+          <span>
+            {content.length} / {maxChars}
+          </span>
         </div>
 
         <textarea
           value={content}
-          onChange={(e) => setContent(e.target.value.slice(0, maxChars))}
+          onChange={(e) =>
+            setContent(e.target.value.slice(0, maxChars))
+          }
           rows={14}
           placeholder="Enter or paste your text content here..."
           className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 resize-none focus:outline-none"
@@ -58,17 +79,26 @@ export default function PasteForm() {
 
         <button
           onClick={createPaste}
-          className="w-full bg-blue-600 hover:bg-blue-700 transition rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
+          disabled={loading}
+          className={`w-full rounded-xl py-3 font-semibold flex items-center justify-center gap-2 transition
+            ${
+              loading
+                ? "bg-slate-600 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
         >
-          Create Paste ✈️
+          {loading ? "Creating..." : "Create Paste ✈️"}
         </button>
 
         {result && (
           <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 break-all">
-            <p className="text-sm text-slate-400 mb-1">Shareable Link</p>
+            <p className="text-sm text-slate-400 mb-1">
+              Shareable Link
+            </p>
             <a
               href={result}
               target="_blank"
+              rel="noreferrer"
               className="text-blue-400 underline"
             >
               {result}
